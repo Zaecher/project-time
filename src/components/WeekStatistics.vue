@@ -27,6 +27,7 @@ const ui = computed(() => ({
 
 <template>
   <UCard
+    id="week-statistics"
     variant="subtle"
     :ui="ui"
   >

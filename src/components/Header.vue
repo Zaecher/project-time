@@ -4,8 +4,10 @@ import { useLocalStorage } from "@vueuse/core"
 import { useProjectTimeStore } from "../store"
 import { DEFAULT_TICKET_PATTERN, round } from "../helpers"
 import { parse } from "date-fns"
+import { useTourStore } from "../tour"
 
 const toast = useToast()
+const { tour, openConfiguration } = useTourStore()
 
 const workHoursPerDay = useLocalStorage("workHoursPerDay", 0)
 const overtimeBaseline = useLocalStorage("overtimeBaseline", 0)
@@ -19,10 +21,7 @@ const showRecommendedTimestamps = useLocalStorage(
   "showRecommendedTimestamps",
   false,
 )
-const showWholeCurrentWeek = useLocalStorage(
-  "showWholeCurrentWeek",
-  false,
-)
+const showWholeCurrentWeek = useLocalStorage("showWholeCurrentWeek", false)
 
 const { totalBalance, deleteOldData, loadTimestamps, getTimestampsFromDb } =
   await useProjectTimeStore()
@@ -64,6 +63,10 @@ const threshold = new Date()
 threshold.setDate(threshold.getDate() - 14)
 threshold.setHours(0, 0, 0, 0)
 const cutoffDate = ref(threshold.toISOString().substring(0, 10))
+
+watch(openConfiguration, (o) => {
+  open.value = o
+})
 
 async function deleteData() {
   const date = parse(cutoffDate.value, "yyyy-MM-dd", threshold)
@@ -138,6 +141,7 @@ const openModalExport = ref(false)
         v-model:open="open"
       >
         <UButton
+          id="configuration-button"
           icon="fa7-solid:gear"
           label="Configuration"
           variant="subtle"
@@ -145,71 +149,79 @@ const openModalExport = ref(false)
         />
         <template #content>
           <div class="flex flex-col w-65 py-5 gap-1">
-            <USwitch
-              v-model="rounded"
-              label="15 min resolution"
-              color="success"
-              class="px-5 py-2"
-            />
-            <USwitch
-              v-model="showRecommendedTimestamps"
-              label="Recommend timestamps"
-              color="success"
-              class="px-5 py-2"
-            />
-            <USwitch
-              v-model="showWholeCurrentWeek"
-              label="Show whole current week"
-              color="success"
-              class="px-5 py-2"
-            />
-            <USwitch
-              v-model="parseTickets"
-              label="Parse ticket numbers"
-              color="success"
-              class="px-5 py-2"
-            />
             <div
-              v-if="parseTickets"
-              class="flex items-center gap-2 justify-end px-5"
+              id="general-options"
+              class="flex flex-col gap-1"
             >
-              <UModal
-                title="Set ticket pattern"
-                :dismissible="false"
-                :close="false"
-                :ui="{
-                  content: 'w-100',
-                  footer: 'justify-end',
-                  body: 'flex justify-between items-center gap-2',
-                }"
+              <USwitch
+                v-model="rounded"
+                label="15 min resolution"
+                color="success"
+                class="px-5 py-2"
+              />
+              <USwitch
+                v-model="showRecommendedTimestamps"
+                label="Recommend timestamps"
+                color="success"
+                class="px-5 py-2"
+              />
+              <USwitch
+                v-model="showWholeCurrentWeek"
+                label="Show whole current week"
+                color="success"
+                class="px-5 py-2"
+              />
+            </div>
+            <div id="parse-tickets-button">
+              <USwitch
+                v-model="parseTickets"
+                label="Parse ticket numbers"
+                color="success"
+                class="px-5 py-2"
+              />
+              <div
+                v-if="parseTickets"
+                class="flex items-center gap-2 justify-end px-5"
               >
-                <UButton
-                  icon="fa7-solid:file-prescription"
-                  color="neutral"
-                  variant="subtle"
-                  label="Set pattern..."
-                  class="mx-2"
-                />
-                <template #body>
-                  <UIcon name="fa7-solid:file-prescription" />
-                  <UInput
-                    v-model:model-value="parseTicketPattern"
-                    placeholder=".*"
-                    class="grow"
-                  />
-                </template>
-                <template #footer="{ close }">
+                <UModal
+                  title="Set ticket pattern"
+                  :dismissible="false"
+                  :close="false"
+                  :ui="{
+                    content: 'w-100',
+                    footer: 'justify-end',
+                    body: 'flex justify-between items-center gap-2',
+                  }"
+                >
                   <UButton
-                    label="Save"
-                    color="primary"
-                    class="cursor-pointer"
-                    @click="close"
+                    icon="fa7-solid:file-prescription"
+                    color="neutral"
+                    variant="subtle"
+                    label="Set pattern..."
+                    class="mx-2"
                   />
-                </template>
-              </UModal>
+                  <template #body>
+                    <UIcon name="fa7-solid:file-prescription" />
+                    <UInput
+                      v-model:model-value="parseTicketPattern"
+                      placeholder=".*"
+                      class="grow"
+                    />
+                  </template>
+                  <template #footer="{ close }">
+                    <UButton
+                      label="Save"
+                      color="primary"
+                      class="cursor-pointer"
+                      @click="close"
+                    />
+                  </template>
+                </UModal>
+              </div>
             </div>
             <USeparator />
             <div
+              id="work-hours-input"
               class="flex items-center gap-2 justify-between px-5"
               :class="{ 'bg-red-400': workHoursPerDay === 0 }"
             >
@@ -226,7 +238,10 @@ const openModalExport = ref(false)
                 />
               </UFormField>
             </div>
-            <div class="flex items-center gap-2 justify-between px-5">
+            <div
+              id="overtime-baseline-input"
+              class="flex items-center gap-2 justify-between px-5"
+            >
               <UIcon name="fa7-solid:piggy-bank" />
               <UFormField
                 label="Overtime baseline"
@@ -241,6 +256,13 @@ const openModalExport = ref(false)
               </UFormField>
             </div>
             <USeparator />
+            <UButton
+              icon="fa7-solid:person-military-pointing"
+              label="Start guided tour..."
+              variant="subtle"
+              class="mx-2"
+              @click="tour.drive()"
+            />
             <UModal
               v-model:open="openModalExport"
               title="Export data as CSV"

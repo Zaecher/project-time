@@ -1,4 +1,5 @@
 import "./assets/css/main.css"
+import "driver.js/dist/driver.css"
 
 import { createApp } from "vue"
 import { createRouter, createWebHashHistory } from "vue-router"

@@ -2,8 +2,10 @@
 import { useColorMode, useLocalStorage } from "@vueuse/core"
 import { useProjectTimeStore } from "../store"
 import { SystemProjects } from "../model"
+import { useTourStore } from "../tour"
 
 const { currentProject, addTimestamp } = await useProjectTimeStore()
+const { dummyProject } = useTourStore()
 
 async function selectProject(project: string) {
   currentProject.value = project
@@ -11,15 +13,16 @@ async function selectProject(project: string) {
 }
 
 const colorMode = useColorMode()
-const gray = computed(() => colorMode.value === "dark" ? "bg-gray-700" : "bg-gray-200")
+const gray = computed(() =>
+  colorMode.value === "dark" ? "bg-gray-700" : "bg-gray-200",
+)
 
 const ui = computed(() => ({
   root: "flex-none shadow-lg",
   header:
     "flex flex-row bg-blue-800 font-bold text-white sm:px-2 px-2 sm:py-1 py-1 h-10",
   body: `flex flex-col flex-nowrap gap-1 sm:p-0 p-0 sm:py-1 py-1`,
-  footer:
-    `flex flex-row ${gray.value} sm:px-2 px-2 sm:py-1 py-1 items-center justify-between`,
+  footer: `flex flex-row ${gray.value} sm:px-2 px-2 sm:py-1 py-1 items-center justify-between`,
 }))
 
 const projects = useLocalStorage<string[]>("projects", [])
@@ -58,6 +61,7 @@ function deleteProject(project: string) {
     </template>
     <template #footer>
       <UInput
+        id="add-project-input"
         v-model="newProject"
         placeholder="Add new project..."
         class="w-full"
@@ -74,6 +78,31 @@ function deleteProject(project: string) {
       @click="selectProject(project.name)"
       :disabled="currentProject === project.name"
     />
+    <div v-if="dummyProject">
+      <UButton
+        id="dummy-project"
+        icon="fa7-solid:briefcase"
+        :label="dummyProject"
+        variant="ghost"
+        color="primary"
+        class="w-full justify-between"
+      >
+        <template #default>
+          <div class="w-full text-left">
+            {{ dummyProject }}
+          </div>
+        </template>
+        <template #trailing>
+          <UButton
+            id="dummy-project-delete"
+            icon="fa7-solid:trash"
+            variant="ghost"
+            color="error"
+            class="mr-1 p-0.5"
+          />
+        </template>
+      </UButton>
+    </div>
     <div
       v-for="project in projects.sort()"
       :key="project"

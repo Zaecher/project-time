@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useLocalStorage } from "@vueuse/core"
 import { useProjectTimeStore } from "../store"
+import { useTourStore } from "../tour"
 
 const toast = useToast()
+const { tour } = useTourStore()
 
 const { workWeeks } = await useProjectTimeStore()
 
@@ -43,6 +45,25 @@ const messages: Toast[] = [
     duration: 10000,
     title: "You can now automatically parse ticket numbers in descriptions",
   },
+  <Toast>{
+    id: "4",
+    icon: "fa7-solid:bullhorn",
+    duration: 15000,
+    title: "Take an interactive tour",
+    actions: [
+      {
+        icon: "fa7-solid:person-military-pointing",
+        class: "cursor-pointer",
+        label: "Start",
+        color: "primary",
+        variant: "solid",
+        onClick: (e) => {
+          e?.stopPropagation()
+          tour.drive()
+        },
+      },
+    ],
+  },
 ]
 const newMessages = messages.filter((x) => !dismissed.value.includes(x.id))
 newMessages.forEach((m) =>
@@ -51,6 +72,7 @@ newMessages.forEach((m) =>
     close: false,
     orientation: "horizontal",
     actions: [
+      ...(m.actions ?? []),
       {
         icon: "fa7-solid:eye-slash",
         class: "cursor-pointer",
